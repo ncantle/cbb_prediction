@@ -129,3 +129,18 @@ def get_home_team_results():
     df = df[['home_team','road_team','Conf','w_l','home_team_pts','road_team_pts']].reset_index(drop = True)
     
     return df
+
+def get_todays_games_df():
+    http = urllib3.PoolManager()
+    URL = f'https://www.ncaa.com/scoreboard/basketball-men/d1/2025/02/07/all-conf'
+    r = http.request('GET', URL)
+    soup = BeautifulSoup(r.data, 'html.parser')
+
+    header = ','.join([item.get_text() for item in soup.select("span[class = 'gamePod-game-team-name']")])
+
+    today_games_df = pd.DataFrame(columns = ['today_road_team', 'today_home_team'])
+
+    today_games_df['today_road_team'] = header.split(',')[0::2]
+    today_games_df['today_home_team'] = header.split(',')[1::2]
+    
+    return today_games_df
