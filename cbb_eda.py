@@ -103,3 +103,29 @@ def add_player_stats_to_team(team_df):
         team_df[f'top_fg_per_{i+1}'] = top_ten_fg_per[i]
         
     return team_df
+
+def get_home_team_results():
+    http = urllib3.PoolManager()
+    URL = f'https://www.sports-reference.com/cbb/schools/abilene-christian/men/2025-schedule.html'
+    r = http.request('GET', URL)
+    soup = BeautifulSoup(r.data, 'html.parser')
+
+    filename = 'schedule.txt'
+    with open(filename, 'w') as f:
+        header = ','.join([item.get_text() for item in soup.select("table[id = 'schedule'] > thead > tr > th")])
+        print(header, file=f)
+        for item in soup.select("table[id='schedule'] > tbody > tr"):
+            row_data = ','.join( [ item.get_text() for item in item.select("td") ] )
+            print(row_data, file=f)
+
+    df = pd.read_csv(filename)
+    df.rename(columns = {'\xa0':'home_away',
+                         '\xa0.1':'w_l',
+                        'Tm':'home_team_pts',
+                        'Opp':'road_team_pts',
+                        'Opponent':'road_team'}, inplace = True)
+    df = df.loc[(df['home_away'].isin([np.nan,'N'])) & (pd.isna(df['w_l']) == False)]
+    df['home_team'] = abi_df['school'][0]
+    df = df[['home_team','road_team','Conf','w_l','home_team_pts','road_team_pts']].reset_index(drop = True)
+    
+    return df
